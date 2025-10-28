@@ -1,2 +1,2 @@
 def add_one(n):
-    return n+1
+    return n + 1

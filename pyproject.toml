@@ -109,3 +109,8 @@ description = 'A simple Python package'
 long_description_content_type = 'text/markdown'
 url = 'https://github.com/k4144/pypi_packaging_tutorial'
 
+[dependency-groups]
+dev = [
+    "ruff>=0.14.2",
+]
+
