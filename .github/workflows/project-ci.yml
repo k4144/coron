@@ -11,5 +11,6 @@ jobs:
     with:
       python-version: "3.11"
       publish-on: "main"
+      package-name: "coron"
     secrets:
       pypi-token: ${{ secrets.PYPI_API_TOKEN }}

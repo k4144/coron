@@ -11,6 +11,10 @@ on:
         description: Set to false to skip Bandit security scanning.
         type: boolean
         default: true
+      package-name:
+        description: Python package name used for version discovery (e.g. \"your_package\").
+        type: string
+        default: ""
       badge-commit-message:
         description: Commit message to use when badge assets change.
         type: string
@@ -46,6 +50,8 @@ jobs:
 
       - name: Compute version delta
         id: compute_version
+        env:
+          PACKAGE_NAME: ${{ inputs.package-name }}
         run: |
           python <<'PY'
           import json
@@ -74,12 +80,23 @@ jobs:
               if version:
                   return version.strip()
 
-              version_file = Path("src") / "pypi_packaging_tutorial" / "_version.py"
-              if version_file.exists():
-                  text = version_file.read_text(encoding="utf-8")
-                  match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", text)
-                  if match:
-                      return match.group(1).strip()
+              package_name = os.environ.get("PACKAGE_NAME", "").strip()
+              candidates: list[Path] = []
+
+              if package_name:
+                  package_path = Path("src").joinpath(*package_name.split("."))
+                  candidates.append(package_path / "_version.py")
+
+              for path in sorted(Path("src").glob("*/_version.py")):
+                  if path not in candidates:
+                      candidates.append(path)
+
+              for version_file in candidates:
+                  if version_file.exists():
+                      text = version_file.read_text(encoding="utf-8")
+                      match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", text)
+                      if match:
+                          return match.group(1).strip()
               raise SystemExit("Unable to determine current project version.")
 
           def read_previous_version() -> str:
@@ -223,7 +240,7 @@ jobs:
         run: |
           mkdir -p reports
           set +e
-          pytest --junitxml=reports/pytest-report.xml --cov=pypi_packaging_tutorial --cov-report=xml:reports/coverage.xml
+          pytest --junitxml=reports/pytest-report.xml --cov=src --cov-report=xml:reports/coverage.xml
           status=$?
           set -e
           echo "$status" > reports/pytest.exit
