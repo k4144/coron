@@ -1,0 +1,103 @@
+# the project table is used by most build backends
+[project]
+# name is the package distribution name. [a-zA-Z0-9][a-zA-Z0-9_.-][a-zA-Z0-9]. It only contains letters, numbers, ., _ , and -. 
+# It also must not already be taken on pypi 
+name = "example_package"
+
+# package version. some build backends allow it to be specified from a file or Git tag
+version = "0.0.1"
+
+# name, email for each author. Same for maintainers.
+authors = [
+  { name="Example Author", email="author@example.com" },
+]
+
+maintainers = [
+  {name = "ali", email = "ali@example.com"}
+]
+
+# a one-sentence summary 
+description = "A small example package"
+
+# path to a readme file containing a detailed description of the package. The description will be shown on pypi's detail page for the package. 
+readme = "README.md"
+
+# define license as file
+# license = {file = "LICENSE.TXT"}
+# define license referring to known license type
+# license = {text = "MIT License"}
+# license can also be specified under classifiers, see there
+
+# supported python versions 
+requires-python = ">=3.8,<=3.13"
+
+# presumable used for pypi search
+# keywords = ["egg", "bacon", "sausage", "tomatoes", ]
+
+
+# gives pypi and pip additional metadata (additional classifyers: e.g. framework, developmentstatus, environment, see https://pypi.org/classifiers/)
+classifiers = [
+    # status
+    "Development Status :: 4 - Beta",
+    # who is the project intended for
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    
+    "Programming Language :: Python :: 3",
+    # license
+    "License :: OSI Approved :: MIT License",
+    # supported python versions
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    # prevent pypi upload	
+    "Private :: Do Not Upload"
+]
+
+# the dependencies of the project
+dependencies = [
+  "httpx",
+  "gidgethub[httpx]>4.0.0",
+  "django>2.1; os_name != 'nt'",
+  "django>2.0; os_name == 'nt'",
+]
+
+
+# poetry doesn't use the project table, it uses tool.poetry instead
+[tool.poetry]
+name = "example_package_k4144"
+
+# define optional dependencies. e.g. to install PyQT5, use pip install package[gui]
+[project.optional-dependencies]
+gui = ["PyQt5"]
+cli = [
+  "rich",
+  "click",
+]
+
+# declaration of plugins
+[project.entry-points."spam.magical"]
+# tomatoes = "spam:main_tomatoes"
+
+
+# extra links shown on pypi, eg. source, documentation, homepage, repository, changelog, issue trackers 
+[project.urls]
+Homepage = "https://example.com"
+Documentation = "https://readthedocs.org"
+Repository = "https://github.com/me/spam.git"
+"Bug Tracker" = "https://github.com/me/spam/issues"
+Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+# specify the build system
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+# requires = ["setuptools >= 61.0"]
+# build-backend = "setuptools.build_meta"
+
+
+# create a cli command that is available after install. This one is spam-cli, it will execute from spam import main_cli; main_cli();
+[project.scripts]
+# spam-cli = "spam:main_cli"
+
+[project.gui-scripts]
+spam-gui = "spam:main_gui"

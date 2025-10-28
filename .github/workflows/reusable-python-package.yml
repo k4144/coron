@@ -1,0 +1,611 @@
+name: reusable-python-package
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python version to use for all jobs.
+        type: string
+        default: "3.11"
+      run-bandit:
+        description: Set to false to skip Bandit security scanning.
+        type: boolean
+        default: true
+      badge-commit-message:
+        description: Commit message to use when badge assets change.
+        type: string
+        default: "chore: update workflow badges"
+      publish-on:
+        description: >
+          Git ref (branch or tag) required for automated publishing. Leave empty
+          to publish from any push event that contains a version bump.
+        type: string
+        default: ""
+    secrets:
+      pypi-token:
+        required: false
+        description: PyPI token used for publishing when a new release is detected.
+
+env:
+  PROJECT_ROOT: ${{ github.workspace }}
+
+jobs:
+  version:
+    name: Determine version
+    runs-on: ubuntu-latest
+    outputs:
+      current_version: ${{ steps.compute_version.outputs.current_version }}
+      previous_version: ${{ steps.compute_version.outputs.previous_version }}
+      release_type: ${{ steps.compute_version.outputs.release_type }}
+      version_changed: ${{ steps.compute_version.outputs.version_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute version delta
+        id: compute_version
+        run: |
+          python <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          def read_current_version() -> str:
+              pyproject = Path("pyproject.toml")
+              version = None
+              if pyproject.exists():
+                  text = pyproject.read_text(encoding="utf-8")
+                  # Prefer PEP 621 [project] table if version is static.
+                  match = re.search(r"(?m)^\s*version\s*=\s*['\"]([^'\"]+)['\"]", text)
+                  if match:
+                      version = match.group(1)
+                  else:
+                      # Fallback to legacy [metadata] table.
+                      match = re.search(
+                          r"(?m)^\s*\[metadata\][\s\S]*?^\s*version\s*=\s*['\"]([^'\"]+)['\"]",
+                          text,
+                      )
+                      if match:
+                          version = match.group(1)
+              if version:
+                  return version.strip()
+
+              version_file = Path("src") / "pypi_packaging_tutorial" / "_version.py"
+              if version_file.exists():
+                  text = version_file.read_text(encoding="utf-8")
+                  match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", text)
+                  if match:
+                      return match.group(1).strip()
+              raise SystemExit("Unable to determine current project version.")
+
+          def read_previous_version() -> str:
+              try:
+                  tag = (
+                      subprocess.check_output(
+                          ["git", "describe", "--tags", "--abbrev=0"],
+                          text=True,
+                      )
+                      .strip()
+                  )
+              except subprocess.CalledProcessError:
+                  return "0.0.0"
+
+              # Accept tags that optionally start with a leading "v".
+              match = re.fullmatch(r"v?(?P<ver>\d+\.\d+\.\d+)", tag)
+              if match:
+                  return match.group("ver")
+              return "0.0.0"
+
+          def compare_versions(current: str, previous: str) -> tuple[str, bool]:
+              def parse(value: str) -> tuple[int, int, int]:
+                  parts = value.split(".")
+                  if len(parts) < 3:
+                      parts += ["0"] * (3 - len(parts))
+                  return tuple(int(p) for p in parts[:3])
+
+              c_major, c_minor, c_patch = parse(current)
+              p_major, p_minor, p_patch = parse(previous)
+
+              if (c_major, c_minor, c_patch) == (p_major, p_minor, p_patch):
+                  return ("none", False)
+              if c_major > p_major:
+                  return ("major", True)
+              if c_major == p_major and c_minor > p_minor:
+                  return ("minor", True)
+              if c_major == p_major and c_minor == p_minor and c_patch > p_patch:
+                  return ("patch", True)
+              # Handles unexpected version regressions.
+              return ("regression", True)
+
+          current_version = read_current_version()
+          previous_version = read_previous_version()
+          release_type, changed = compare_versions(current_version, previous_version)
+
+          output_path = os.environ["GITHUB_OUTPUT"]
+          with open(output_path, "a", encoding="utf-8") as fh:
+              fh.write(f"current_version={current_version}\n")
+              fh.write(f"previous_version={previous_version}\n")
+              fh.write(f"release_type={release_type}\n")
+              fh.write(f"version_changed={'true' if changed else 'false'}\n")
+          PY
+
+  tests:
+    name: Tests and security
+    runs-on: ubuntu-latest
+    needs: version
+    outputs:
+      junit_report: ${{ steps.store_meta.outputs.junit_report }}
+      coverage_report: ${{ steps.store_meta.outputs.coverage_report }}
+      bandit_report: ${{ steps.store_meta.outputs.bandit_report }}
+      black_report: ${{ steps.store_meta.outputs.black_report }}
+      black_status: ${{ steps.black_status.outputs.status }}
+      tests_report: ${{ steps.store_meta.outputs.tests_report }}
+      tests_status: ${{ steps.tests_status.outputs.status }}
+      bandit_status: ${{ steps.bandit_status.outputs.status }}
+      ruff_report: ${{ steps.store_meta.outputs.ruff_report }}
+      ruff_status: ${{ steps.ruff_check.outputs.status }}
+      docs_report: ${{ steps.store_meta.outputs.docs_report }}
+      docs_status: ${{ steps.docs_status.outputs.status }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pytest pytest-cov coverage[toml] black ruff sphinx sphinx-autodoc-typehints myst-parser
+          if [ "${{ inputs.run-bandit }}" = "true" ]; then
+            pip install bandit
+          fi
+
+      - name: Run Black (format check)
+        id: black_check
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          black --check src tests > reports/black.log 2>&1
+
+      - name: Run Ruff (lint)
+        id: ruff_check
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          set +e
+          ruff check src tests --output-format json > reports/ruff-details.json
+          status=$?
+          set -e
+          export RUFF_STATUS=$status
+          if [ "$status" -eq 0 ]; then
+            echo "status=passing" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failing" >> "$GITHUB_OUTPUT"
+          fi
+          python <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          reports_dir = Path("reports")
+          details_file = reports_dir / "ruff-details.json"
+          summary_file = reports_dir / "ruff.json"
+
+          status_code = int(os.environ.get("RUFF_STATUS", "0"))
+          status = "passing" if status_code == 0 else "failing"
+
+          issues = 0
+          if details_file.exists():
+              try:
+                  data = json.loads(details_file.read_text(encoding="utf-8"))
+                  if isinstance(data, list):
+                      issues = len(data)
+                  elif isinstance(data, dict):
+                      issues = len(data.get("files", []))
+              except json.JSONDecodeError:
+                  issues = -1
+
+          summary = {"status": status, "issues": issues}
+          summary_file.write_text(json.dumps(summary), encoding="utf-8")
+          PY
+          exit $status
+
+      - name: Run pytest with coverage
+        id: pytest_run
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          set +e
+          pytest --junitxml=reports/pytest-report.xml --cov=pypi_packaging_tutorial --cov-report=xml:reports/coverage.xml
+          status=$?
+          set -e
+          echo "$status" > reports/pytest.exit
+          if [ "$status" -eq 0 ]; then
+            echo "result=passing" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=failing" >> "$GITHUB_OUTPUT"
+          fi
+          exit $status
+
+      - name: Run Bandit
+        if: inputs.run-bandit
+        id: bandit_check
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          set +e
+          bandit -r src -f json -o reports/bandit.json
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "status=passing" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failing" >> "$GITHUB_OUTPUT"
+          fi
+          exit $status
+
+      - name: Ensure Bandit report placeholder
+        if: ${{ !inputs.run-bandit }}
+        run: |
+          mkdir -p reports
+          echo '{"results": [], "metrics": {"_totals": {"SEVERITY.HIGH": 0, "SEVERITY.MEDIUM": 0, "SEVERITY.LOW": 0}}}' > reports/bandit.json
+
+      - name: Build documentation
+        id: docs_build
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          make -C docs html > reports/docs.log 2>&1
+
+      - name: Record Black status
+        id: black_status
+        run: |
+          mkdir -p reports
+          status="${{ steps.black_check.outcome }}"
+          if [ "$status" = "success" ]; then
+            badge_value="passing"
+          else
+            badge_value="failing"
+            echo "::warning::Black formatting changes required. See reports/black.log"
+          fi
+          printf '{"status": "%s"}\n' "$badge_value" > reports/black.json
+          {
+            echo "status=$badge_value"
+            echo "report=reports/black.json"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Record pytest status
+        id: tests_status
+        run: |
+          mkdir -p reports
+          result="${{ steps.pytest_run.outputs.result || 'passing' }}"
+          if [ "$result" = "passing" ]; then
+            badge_value="passing"
+          else
+            badge_value="failing"
+            echo "::warning::Pytest reported failures. See reports/pytest-report.xml"
+          fi
+          printf '{"status": "%s"}\n' "$badge_value" > reports/tests.json
+          {
+            echo "status=$badge_value"
+            echo "report=reports/tests.json"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Record Bandit status
+        id: bandit_status
+        run: |
+          mkdir -p reports
+          outcome="${{ steps.bandit_check.outputs.status || 'skipped' }}"
+          case "$outcome" in
+            passing)
+              badge_value="passing"
+              ;;
+            failing)
+              badge_value="failing"
+              echo "::warning::Bandit reported findings. See reports/bandit.json"
+              ;;
+            *)
+              badge_value="skipped"
+              ;;
+          esac
+          printf '{"status": "%s"}\n' "$badge_value" > reports/bandit-status.json
+          {
+            echo "status=$badge_value"
+            echo "report=reports/bandit-status.json"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Record docs status
+        id: docs_status
+        run: |
+          mkdir -p reports
+          status="${{ steps.docs_build.outcome }}"
+          if [ "$status" = "success" ]; then
+            badge_value="passing"
+          else
+            badge_value="failing"
+            echo "::warning::Documentation build failed. See reports/docs.log"
+          fi
+          printf '{"status": "%s"}\n' "$badge_value" > reports/docs.json
+          {
+            echo "status=$badge_value"
+            echo "report=reports/docs.json"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload analysis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-reports
+          path: reports/
+
+      - name: Surface report paths
+        id: store_meta
+        run: |
+          {
+            echo "junit_report=reports/pytest-report.xml"
+            echo "coverage_report=reports/coverage.xml"
+            echo "bandit_report=reports/bandit.json"
+            echo "black_report=reports/black.json"
+            echo "tests_report=reports/tests.json"
+            echo "ruff_report=reports/ruff.json"
+            echo "bandit_status_report=reports/bandit-status.json"
+            echo "docs_report=reports/docs.json"
+          } >> "$GITHUB_OUTPUT"
+
+  badges:
+    name: Update badges
+    runs-on: ubuntu-latest
+    needs: tests
+    if: ${{ always() }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download reports
+        uses: actions/download-artifact@v4
+        with:
+          name: analysis-reports
+          path: reports
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install badge tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install anybadge
+
+      - name: Generate badges
+        run: |
+          python <<'PY'
+          import json
+          import math
+          import os
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          from anybadge import Badge
+
+          reports_dir = Path("reports")
+          badges_dir = Path("badges")
+          badges_dir.mkdir(parents=True, exist_ok=True)
+
+          # --- Test summary badge ---
+          junit_file = reports_dir / "pytest-report.xml"
+          tests_total = failures = errors = skips = 0
+          status_text = "unknown"
+          color = "lightgrey"
+
+          if junit_file.exists():
+              tree = ET.parse(junit_file)
+              root = tree.getroot()
+
+              if root.tag.endswith("testsuite"):
+                  suites = [root]
+              else:
+                  suites = [
+                      suite
+                      for suite in root.iter()
+                      if suite.tag.endswith("testsuite")
+                  ]
+
+              for suite in suites:
+                  tests_total += int(suite.attrib.get("tests", 0))
+                  failures += int(suite.attrib.get("failures", 0))
+                  errors += int(suite.attrib.get("errors", 0))
+                  skips += int(suite.attrib.get("skipped", suite.attrib.get("skip", 0)))
+
+              if tests_total > 0:
+                  if failures == errors == 0:
+                      status_text = "passing"
+                      color = "green"
+                  else:
+                      status_text = "failing"
+                      color = "red"
+                  value = f"{status_text} ({tests_total} tests)"
+              else:
+                  value = "no-tests"
+          else:
+              value = "no-data"
+
+          Badge(
+              label="tests",
+              value=value,
+              default_color=color,
+          ).write_badge(badges_dir / "tests.svg", overwrite=True)
+
+          # --- Coverage badge ---
+          coverage_pct = 0.0
+          coverage_color = "lightgrey"
+          coverage_file = reports_dir / "coverage.xml"
+          if coverage_file.exists():
+              root = ET.parse(coverage_file).getroot()
+              pct = float(root.attrib.get("line-rate", 0)) * 100
+              coverage_pct = round(pct, 1)
+              if coverage_pct >= 90:
+                  coverage_color = "green"
+              elif coverage_pct >= 75:
+                  coverage_color = "yellowgreen"
+              elif coverage_pct >= 60:
+                  coverage_color = "orange"
+              else:
+                  coverage_color = "red"
+          Badge(
+              label="coverage",
+              value=f"{coverage_pct:.1f}%",
+              default_color=coverage_color,
+          ).write_badge(badges_dir / "coverage.svg", overwrite=True)
+
+          # --- Bandit badge ---
+          bandit_color = "green"
+          bandit_value = "clean"
+          bandit_data = {"results": [], "metrics": {"_totals": {}}}
+          bandit_file = reports_dir / "bandit.json"
+          if bandit_file.exists():
+              bandit_data = json.loads(bandit_file.read_text(encoding="utf-8"))
+
+          totals = bandit_data.get("metrics", {}).get("_totals", {})
+          high = int(totals.get("SEVERITY.HIGH", 0))
+          medium = int(totals.get("SEVERITY.MEDIUM", 0))
+          low = int(totals.get("SEVERITY.LOW", 0))
+          issues = high + medium + low
+
+          if high > 0:
+              bandit_color = "red"
+              bandit_value = f"{high} high"
+          elif medium > 0:
+              bandit_color = "orange"
+              bandit_value = f"{medium} medium"
+          elif low > 0:
+              bandit_color = "yellow"
+              bandit_value = f"{low} low"
+          else:
+              bandit_value = "0 issues"
+
+          Badge(
+              label="bandit",
+              value=bandit_value,
+              default_color=bandit_color,
+          ).write_badge(badges_dir / "bandit.svg", overwrite=True)
+
+          # --- Black badge ---
+          black_color = "lightgrey"
+          black_value = "unknown"
+          black_file = reports_dir / "black.json"
+          if black_file.exists():
+              data = json.loads(black_file.read_text(encoding="utf-8"))
+              black_value = data.get("status", "unknown")
+              if black_value == "passing":
+                  black_color = "green"
+              elif black_value == "failing":
+                  black_color = "red"
+              else:
+                  black_color = "orange"
+
+          Badge(
+              label="black",
+              value=black_value,
+              default_color=black_color,
+          ).write_badge(badges_dir / "black.svg", overwrite=True)
+
+          # --- Ruff badge ---
+          ruff_color = "lightgrey"
+          ruff_value = "unknown"
+          ruff_file = reports_dir / "ruff.json"
+          if ruff_file.exists():
+              data = json.loads(ruff_file.read_text(encoding="utf-8"))
+              ruff_value = data.get("status", "unknown")
+              issues = data.get("issues")
+              if isinstance(issues, int) and issues > 0 and ruff_value == "passing":
+                  # ensure failing status if issues reported
+                  ruff_value = "failing"
+              if ruff_value == "passing":
+                  ruff_color = "green"
+              elif ruff_value == "failing":
+                  ruff_color = "red"
+              else:
+                  ruff_color = "orange"
+
+          Badge(
+              label="ruff",
+              value=ruff_value,
+              default_color=ruff_color,
+          ).write_badge(badges_dir / "ruff.svg", overwrite=True)
+
+          # --- Docs badge ---
+          docs_color = "lightgrey"
+          docs_value = "unknown"
+          docs_file = reports_dir / "docs.json"
+          if docs_file.exists():
+              data = json.loads(docs_file.read_text(encoding="utf-8"))
+              docs_value = data.get("status", "unknown")
+              if docs_value == "passing":
+                  docs_color = "green"
+              elif docs_value == "failing":
+                  docs_color = "red"
+              else:
+                  docs_color = "orange"
+
+          Badge(
+              label="docs",
+              value=docs_value,
+              default_color=docs_color,
+          ).write_badge(badges_dir / "docs.svg", overwrite=True)
+          PY
+
+      - name: Commit badge updates
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git status --short badges | grep -q .
+          then
+            git add badges
+            git commit -m "${{ inputs.badge-commit-message }}"
+            git push
+          fi
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs:
+      - version
+      - tests
+    if: >
+      needs.version.outputs.version_changed == 'true' &&
+      needs.version.outputs.release_type != 'regression' &&
+      github.event_name == 'push' &&
+      needs.tests.outputs.tests_status == 'passing' &&
+      needs.tests.outputs.black_status == 'passing' &&
+      needs.tests.outputs.ruff_status == 'passing' &&
+      needs.tests.outputs.docs_status == 'passing' &&
+      (needs.tests.outputs.bandit_status == 'passing' || needs.tests.outputs.bandit_status == 'skipped') &&
+      (inputs.publish-on == '' || startsWith(github.ref, format('refs/heads/{0}', inputs.publish-on)) || startsWith(github.ref, format('refs/tags/{0}', inputs.publish-on)))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build distribution
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

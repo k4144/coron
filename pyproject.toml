@@ -1,0 +1,111 @@
+
+## build config
+[build-system]
+#requires = ["poetry-core"]
+#build-backend = "poetry.core.masonry.api"
+#requires = ['setuptools>=42']
+#build-backend = 'setuptools.build_meta'
+# required for test setup
+requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "src/coron/_version.py"
+
+
+
+## project config
+
+[project]
+dynamic = ["version"]
+name = "coron"
+description = "simple python packaging tutorial"
+readme = "README.md"
+requires-python = ">=3.8"
+#license =  {text = "MIT"}
+license = {file = "LICENSE.txt"} 
+
+authors = [
+    {name = "Your Name", email = "you@example.com"},
+]
+
+#  classifiers:  "License :: OSI Approved :: MIT License",
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    #"requests>=2.28.0",
+]
+
+
+#[tool.poetry]
+#name = "coron"
+#version = "0.1.5.14"
+#description = "simple python packaging tutorial"
+#authors = ["Your Name <you@example.com>"]
+#readme = "README.txt"
+# if the package is located under src/, this line is unnecessary
+# packages = [{include = "coron"}]
+
+# exclude = [
+#    "tests/ignored_folder"
+#]
+
+#[tool.poetry.dependencies]
+# no dependencies, keep it simple
+#python = "^3.10"
+#notebook = "^7.0.6"
+
+
+## test configs
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=3.0",
+    "flake8>=4.0",
+    "black>=22.0",
+    "mypy>=0.900",
+    "tox>=3.24",
+]
+
+
+[tool.pytest.ini_options]
+addopts = "--cov=your_package_name --cov-report=term-missing"
+testpaths = ["tests"]
+pythonpath = ["src"]  # This allows direct imports from src
+
+
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+
+## metadata:long_description = ['file: README.md', 'LICENSE.txt']
+## metadata
+[metadata]
+name = 'coron'
+version = '0.1.0'
+author = 'your name'
+author_email = 'your_email@example.com'
+description = 'A simple Python package'
+
+long_description_content_type = 'text/markdown'
+url = 'https://github.com/k4144/pypi_packaging_tutorial'
+
