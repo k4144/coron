@@ -1,0 +1,4 @@
+error: cannot format /home/runner/work/coron/coron/tests/ignored_folder/ignored_file.py: Cannot parse for target version Python 3.8: 1:5: test file to be ignored by build
+
+Oh no! 💥 💔 💥
+13 files would be left unchanged, 1 file would fail to reformat.

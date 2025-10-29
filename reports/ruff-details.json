@@ -1,0 +1,104 @@
+[
+  {
+    "cell": null,
+    "code": "invalid-syntax",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "filename": "/home/runner/work/coron/coron/tests/ignored_folder/ignored_file.py",
+    "fix": null,
+    "location": {
+      "column": 6,
+      "row": 1
+    },
+    "message": "Simple statements must be separated by newlines or semicolons",
+    "noqa_row": null,
+    "url": null
+  },
+  {
+    "cell": null,
+    "code": "invalid-syntax",
+    "end_location": {
+      "column": 13,
+      "row": 1
+    },
+    "filename": "/home/runner/work/coron/coron/tests/ignored_folder/ignored_file.py",
+    "fix": null,
+    "location": {
+      "column": 11,
+      "row": 1
+    },
+    "message": "Simple statements must be separated by newlines or semicolons",
+    "noqa_row": null,
+    "url": null
+  },
+  {
+    "cell": null,
+    "code": "invalid-syntax",
+    "end_location": {
+      "column": 16,
+      "row": 1
+    },
+    "filename": "/home/runner/work/coron/coron/tests/ignored_folder/ignored_file.py",
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 1
+    },
+    "message": "Simple statements must be separated by newlines or semicolons",
+    "noqa_row": null,
+    "url": null
+  },
+  {
+    "cell": null,
+    "code": "invalid-syntax",
+    "end_location": {
+      "column": 24,
+      "row": 1
+    },
+    "filename": "/home/runner/work/coron/coron/tests/ignored_folder/ignored_file.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 1
+    },
+    "message": "Simple statements must be separated by newlines or semicolons",
+    "noqa_row": null,
+    "url": null
+  },
+  {
+    "cell": null,
+    "code": "invalid-syntax",
+    "end_location": {
+      "column": 27,
+      "row": 1
+    },
+    "filename": "/home/runner/work/coron/coron/tests/ignored_folder/ignored_file.py",
+    "fix": null,
+    "location": {
+      "column": 25,
+      "row": 1
+    },
+    "message": "Simple statements must be separated by newlines or semicolons",
+    "noqa_row": null,
+    "url": null
+  },
+  {
+    "cell": null,
+    "code": "invalid-syntax",
+    "end_location": {
+      "column": 33,
+      "row": 1
+    },
+    "filename": "/home/runner/work/coron/coron/tests/ignored_folder/ignored_file.py",
+    "fix": null,
+    "location": {
+      "column": 28,
+      "row": 1
+    },
+    "message": "Simple statements must be separated by newlines or semicolons",
+    "noqa_row": null,
+    "url": null
+  }
+]

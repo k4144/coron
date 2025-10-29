@@ -1,0 +1,39 @@
+make: Entering directory '/home/runner/work/coron/coron/docs'
+[01mRunning Sphinx v8.2.3[39;49;00m
+[01mloading translations [en]... [39;49;00mdone
+[01mmaking output directory... [39;49;00mdone
+[91mWARNING: html_static_path entry '_static' does not exist[39;49;00m
+[01mbuilding [mo]: [39;49;00mtargets for 0 po files that are out of date
+[01mwriting output... [39;49;00m
+[01mbuilding [html]: [39;49;00mtargets for 3 source files that are out of date
+[01mupdating environment: [39;49;00m[new config] 3 added, 0 changed, 0 removed
+[2K[01mreading sources... [39;49;00m[ 33%] [35mapi[39;49;00m[2K[01mreading sources... [39;49;00m[ 67%] [35mindex[39;49;00m[2K[01mreading sources... [39;49;00m[100%] [35moverview[39;49;00m
+[91mWARNING: autodoc: failed to import module 'pypi_packaging_tutorial'; the following exception was raised:
+['Traceback (most recent call last):\n', '  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/sphinx/ext/autodoc/importer.py", line 269, in import_object\n    module = import_module(modname, try_reload=True)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n', '  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/sphinx/ext/autodoc/importer.py", line 172, in import_module\n    raise ModuleNotFoundError(msg, name=modname)  # NoQA: TRY301\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n', "ModuleNotFoundError: No module named 'pypi_packaging_tutorial'\n"] [autodoc.import_object][39;49;00m
+[91mWARNING: autodoc: failed to import module 'divide.divide_by_three' from module 'pypi_packaging_tutorial'; the following exception was raised:
+['Traceback (most recent call last):\n', '  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/sphinx/ext/autodoc/importer.py", line 269, in import_object\n    module = import_module(modname, try_reload=True)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n', '  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/sphinx/ext/autodoc/importer.py", line 172, in import_module\n    raise ModuleNotFoundError(msg, name=modname)  # NoQA: TRY301\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n', "ModuleNotFoundError: No module named 'pypi_packaging_tutorial'\n"] [autodoc.import_object][39;49;00m
+[91mWARNING: autodoc: failed to import module 'multiply.multiply_by_three' from module 'pypi_packaging_tutorial'; the following exception was raised:
+['Traceback (most recent call last):\n', '  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/sphinx/ext/autodoc/importer.py", line 269, in import_object\n    module = import_module(modname, try_reload=True)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n', '  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/sphinx/ext/autodoc/importer.py", line 172, in import_module\n    raise ModuleNotFoundError(msg, name=modname)  # NoQA: TRY301\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n', "ModuleNotFoundError: No module named 'pypi_packaging_tutorial'\n"] [autodoc.import_object][39;49;00m
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mcopying assets... [39;49;00m
+[01mcopying static files... [39;49;00m
+Writing evaluated template result to /home/runner/work/coron/coron/docs/_build/html/_static/language_data.js
+Writing evaluated template result to /home/runner/work/coron/coron/docs/_build/html/_static/basic.css
+Writing evaluated template result to /home/runner/work/coron/coron/docs/_build/html/_static/documentation_options.js
+Writing evaluated template result to /home/runner/work/coron/coron/docs/_build/html/_static/alabaster.css
+[01mcopying static files: [39;49;00mdone
+[01mcopying extra files... [39;49;00m
+[01mcopying extra files: [39;49;00mdone
+[01mcopying assets: [39;49;00mdone
+[2K[01mwriting output... [39;49;00m[ 33%] [32mapi[39;49;00m[2K[01mwriting output... [39;49;00m[ 67%] [32mindex[39;49;00m[2K[01mwriting output... [39;49;00m[100%] [32moverview[39;49;00m
+[01mgenerating indices... [39;49;00mgenindex done
+[01mwriting additional pages... [39;49;00msearch done
+[01mdumping search index in English (code: en)... [39;49;00mdone
+[01mdumping object inventory... [39;49;00mdone
+[01mbuild succeeded, 4 warnings.[39;49;00m
+
+The HTML pages are in _build/html.
+make: Leaving directory '/home/runner/work/coron/coron/docs'
