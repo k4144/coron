@@ -101,7 +101,7 @@ disallow_untyped_defs = true
 ## metadata
 [metadata]
 name = 'coron'
-version = '0.1.0'
+version = "0.1.1"
 author = 'your name'
 author_email = 'your_email@example.com'
 description = 'A simple Python package'
