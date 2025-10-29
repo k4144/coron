@@ -240,7 +240,7 @@ jobs:
         run: |
           mkdir -p reports
           set +e
-          pytest src --junitxml=reports/pytest-report.xml --ignore=src/$project_name/_version.py --cov=src --cov-report=xml:reports/coverage.xml
+          pytest --junitxml=reports/pytest-report.xml --ignore=src/$project_name/_version.py --cov=src --cov-report=xml:reports/coverage.xml
           status=$?
           set -e
           echo "$status" > reports/pytest.exit

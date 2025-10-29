@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'pypi-packaging-tutorial'
+project = 'coron'
 copyright = '2025, author'
 author = 'author'
 release = 'v1'
