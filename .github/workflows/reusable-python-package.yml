@@ -15,16 +15,50 @@ on:
         description: Python package name used for version discovery (e.g. \"your_package\").
         type: string
         default: ""
+      publish-on:
+        description: >
+          Git ref (branch or tag prefix) required for automated publishing. Leave
+          empty to allow publishing from any push that contains a version bump.
+        type: string
+        default: ""
       badge-commit-message:
         description: Commit message to use when badge assets change.
         type: string
         default: "chore: update workflow badges"
-      publish-on:
-        description: >
-          Git ref (branch or tag) required for automated publishing. Leave empty
-          to publish from any push event that contains a version bump.
-        type: string
-        default: ""
+    outputs:
+      current_version:
+        description: Current project version detected by setuptools_scm or pyproject metadata.
+        value: ${{ jobs.version.outputs.current_version }}
+      previous_version:
+        description: Previously tagged version.
+        value: ${{ jobs.version.outputs.previous_version }}
+      release_type:
+        description: Version delta (major/minor/patch/none/regression).
+        value: ${{ jobs.version.outputs.release_type }}
+      version_changed:
+        description: Whether the detected version differs from the previous tag.
+        value: ${{ jobs.version.outputs.version_changed }}
+      tests_status:
+        description: Pass/fail status from pytest run.
+        value: ${{ jobs.tests.outputs.tests_status }}
+      black_status:
+        description: Pass/fail status from Black format check.
+        value: ${{ jobs.tests.outputs.black_status }}
+      ruff_status:
+        description: Pass/fail status from Ruff lint.
+        value: ${{ jobs.tests.outputs.ruff_status }}
+      docs_status:
+        description: Pass/fail status from docs build.
+        value: ${{ jobs.tests.outputs.docs_status }}
+      bandit_status:
+        description: Pass/fail/skipped status from Bandit.
+        value: ${{ jobs.tests.outputs.bandit_status }}
+      should_publish:
+        description: Whether all release checks passed and publishing is allowed.
+        value: ${{ jobs.decide.outputs.should_publish }}
+      dist_artifact:
+        description: Name of the uploaded distribution artifact when a publish is triggered.
+        value: ${{ jobs.build.outputs.artifact_name }}
     secrets:
       pypi-token:
         required: false
@@ -375,6 +409,82 @@ jobs:
             echo "docs_report=reports/docs.json"
           } >> "$GITHUB_OUTPUT"
 
+  decide:
+    name: Evaluate publish conditions
+    runs-on: ubuntu-latest
+    needs:
+      - version
+      - tests
+    outputs:
+      should_publish: ${{ steps.evaluate.outputs.should_publish }}
+    steps:
+      - name: Compute publish decision
+        id: evaluate
+        shell: bash
+        env:
+          VERSION_CHANGED: ${{ needs.version.outputs.version_changed }}
+          RELEASE_TYPE: ${{ needs.version.outputs.release_type }}
+          EVENT_NAME: ${{ github.event_name }}
+          TESTS_STATUS: ${{ needs.tests.outputs.tests_status }}
+          BLACK_STATUS: ${{ needs.tests.outputs.black_status }}
+          RUFF_STATUS: ${{ needs.tests.outputs.ruff_status }}
+          DOCS_STATUS: ${{ needs.tests.outputs.docs_status }}
+          BANDIT_STATUS: ${{ needs.tests.outputs.bandit_status }}
+          PUBLISH_ON: ${{ inputs.publish-on }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
+        run: |
+          decision=true
+          if [[ "$VERSION_CHANGED" != "true" ]]; then decision=false; fi
+          if [[ "$RELEASE_TYPE" == "regression" ]]; then decision=false; fi
+          if [[ "$EVENT_NAME" != "push" ]]; then decision=false; fi
+          if [[ "$TESTS_STATUS" != "passing" ]]; then decision=false; fi
+          if [[ "$BLACK_STATUS" != "passing" ]]; then decision=false; fi
+          if [[ "$RUFF_STATUS" != "passing" ]]; then decision=false; fi
+          if [[ "$DOCS_STATUS" != "passing" ]]; then decision=false; fi
+          if [[ "$BANDIT_STATUS" != "passing" && "$BANDIT_STATUS" != "skipped" ]]; then decision=false; fi
+          if [[ -n "$PUBLISH_ON" ]]; then
+            if [[ "$GITHUB_REF_VALUE" != "refs/heads/$PUBLISH_ON" && "$GITHUB_REF_VALUE" != "refs/tags/$PUBLISH_ON" && "$GITHUB_REF_VALUE" != refs/tags/$PUBLISH_ON* ]]; then
+              decision=false
+            fi
+          fi
+          echo "should_publish=$decision" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    needs:
+      - decide
+    if: needs.decide.outputs.should_publish == 'true'
+    outputs:
+      artifact_name: ${{ steps.metadata.outputs.artifact_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build distribution
+        run: python -m build
+
+      - name: Upload distribution artifact
+        id: upload_dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-packages
+          path: dist/
+
+      - name: Expose artifact metadata
+        id: metadata
+        run: echo "artifact_name=dist-packages" >> "$GITHUB_OUTPUT"
+
   badges:
     name: Update badges
     runs-on: ubuntu-latest
@@ -596,43 +706,3 @@ jobs:
             git commit -m "${{ inputs.badge-commit-message }}"
             git push
           fi
-
-  publish:
-    name: Publish to PyPI
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    environment: pypi
-    needs:
-      - version
-      - tests
-    if: >
-      needs.version.outputs.version_changed == 'true' &&
-      needs.version.outputs.release_type != 'regression' &&
-      github.event_name == 'push' &&
-      needs.tests.outputs.tests_status == 'passing' &&
-      needs.tests.outputs.black_status == 'passing' &&
-      needs.tests.outputs.ruff_status == 'passing' &&
-      needs.tests.outputs.docs_status == 'passing' &&
-      (needs.tests.outputs.bandit_status == 'passing' || needs.tests.outputs.bandit_status == 'skipped') &&
-      (inputs.publish-on == '' || startsWith(github.ref, format('refs/heads/{0}', inputs.publish-on)) || startsWith(github.ref, format('refs/tags/{0}', inputs.publish-on)))
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ inputs.python-version }}
-
-      - name: Install build tooling
-        run: |
-          python -m pip install --upgrade pip
-          pip install build
-
-      - name: Build distribution
-        run: python -m build
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
