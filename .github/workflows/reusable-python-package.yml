@@ -189,7 +189,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p reports
-          black --check --extend-exclude '_version\.py$' src tests > reports/black.log 2>&1
+          black --check --extend-exclude '_version\.py$' src > reports/black.log 2>&1
 
       - name: Run Ruff (lint)
         id: ruff_check
@@ -197,7 +197,7 @@ jobs:
         run: |
           mkdir -p reports
           set +e
-          ruff check src tests --output-format json --extend-exclude '_version.py' > reports/ruff-details.json
+          ruff check src --output-format json --extend-exclude '_version.py' > reports/ruff-details.json
           status=$?
           set -e
           export RUFF_STATUS=$status
@@ -240,7 +240,7 @@ jobs:
         run: |
           mkdir -p reports
           set +e
-          pytest --junitxml=reports/pytest-report.xml --cov=src --cov-report=xml:reports/coverage.xml
+          pytest src --junitxml=reports/pytest-report.xml --ignore=src/$project_name/_version.py --cov=src --cov-report=xml:reports/coverage.xml
           status=$?
           set -e
           echo "$status" > reports/pytest.exit
