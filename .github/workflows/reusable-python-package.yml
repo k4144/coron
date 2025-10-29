@@ -603,6 +603,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    environment: pypi
     needs:
       - version
       - tests
