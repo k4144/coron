@@ -433,21 +433,35 @@ jobs:
           PUBLISH_ON: ${{ inputs.publish-on }}
           GITHUB_REF_VALUE: ${{ github.ref }}
         run: |
-          decision=true
-          if [[ "$VERSION_CHANGED" != "true" ]]; then decision=false; fi
-          if [[ "$RELEASE_TYPE" == "regression" ]]; then decision=false; fi
-          if [[ "$EVENT_NAME" != "push" ]]; then decision=false; fi
-          if [[ "$TESTS_STATUS" != "passing" ]]; then decision=false; fi
-          if [[ "$BLACK_STATUS" != "passing" ]]; then decision=false; fi
-          if [[ "$RUFF_STATUS" != "passing" ]]; then decision=false; fi
-          if [[ "$DOCS_STATUS" != "passing" ]]; then decision=false; fi
-          if [[ "$BANDIT_STATUS" != "passing" && "$BANDIT_STATUS" != "skipped" ]]; then decision=false; fi
-          if [[ -n "$PUBLISH_ON" ]]; then
-            if [[ "$GITHUB_REF_VALUE" != "refs/heads/$PUBLISH_ON" && "$GITHUB_REF_VALUE" != "refs/tags/$PUBLISH_ON" && "$GITHUB_REF_VALUE" != refs/tags/$PUBLISH_ON* ]]; then
-              decision=false
+          should_publish=false
+
+          if [[ "$VERSION_CHANGED" == "true" ]] && \
+             [[ "$RELEASE_TYPE" != "regression" ]] && \
+             [[ "$EVENT_NAME" == "push" ]] && \
+             [[ "$TESTS_STATUS" == "passing" ]] && \
+             [[ "$BLACK_STATUS" == "passing" ]] && \
+             [[ "$RUFF_STATUS" == "passing" ]] && \
+             [[ "$DOCS_STATUS" == "passing" ]] && \
+             ([[ "$BANDIT_STATUS" == "passing" ]] || [[ "$BANDIT_STATUS" == "skipped" ]]); then
+
+            ref_ok=true
+            if [[ -n "$PUBLISH_ON" ]]; then
+              case "$GITHUB_REF_VALUE" in
+                refs/heads/${PUBLISH_ON} | refs/tags/${PUBLISH_ON} | refs/tags/${PUBLISH_ON}* )
+                  ref_ok=true
+                  ;;
+                *)
+                  ref_ok=false
+                  ;;
+              esac
+            fi
+
+            if [[ "$ref_ok" == "true" ]]; then
+              should_publish=true
             fi
           fi
-          echo "should_publish=$decision" >> "$GITHUB_OUTPUT"
+
+          echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build distribution
