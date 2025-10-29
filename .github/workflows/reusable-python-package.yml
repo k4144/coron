@@ -386,6 +386,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Clear existing reports
+        run: rm -rf reports
+
       - name: Download reports
         uses: actions/download-artifact@v4
         with:
@@ -584,9 +587,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git status --short badges | grep -q .
+          if git status --short badges reports 2>/dev/null | grep -q .
           then
             git add badges
+            if [ -d reports ]; then
+              git add reports
+            fi
             git commit -m "${{ inputs.badge-commit-message }}"
             git push
           fi
