@@ -439,29 +439,30 @@ jobs:
           pypi_has_version=false
 
           if [[ -n "$PACKAGE_NAME" && -n "$CURRENT_VERSION" ]]; then
-            if python - <<'PY'
-import json
-import os
-import sys
-import urllib.request
+          if [[ -n "$PACKAGE_NAME" && -n "$CURRENT_VERSION" ]]; then
+          exists=$(
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
 
-package = os.environ.get("PACKAGE_NAME", "").strip()
-version = os.environ.get("CURRENT_VERSION", "").strip()
+          package = os.environ.get("PACKAGE_NAME", "").strip()
+          version = os.environ.get("CURRENT_VERSION", "").strip()
 
-if not package or not version:
-    sys.exit(1)
-
-url = f"https://pypi.org/pypi/{package}/json"
-try:
-    with urllib.request.urlopen(url, timeout=10) as resp:
-        data = json.load(resp)
-except Exception:
-    sys.exit(1)
-
-releases = data.get("releases") or {}
-sys.exit(0 if version in releases else 1)
-PY
-            then
+          if not package or not version:
+              print("false")
+          else:
+              try:
+                  with urllib.request.urlopen(f"https://pypi.org/pypi/{package}/json", timeout=10) as resp:
+                      data = json.load(resp)
+              except Exception:
+                  print("false")
+              else:
+                  releases = data.get("releases") or {}
+                  print("true" if version in releases else "false")
+          PY
+          )
+          if [[ "$exists" == "true" ]]; then
               pypi_has_version=true
             fi
           fi
