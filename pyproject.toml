@@ -31,7 +31,7 @@ authors = [
 #  classifiers:  "License :: OSI Approved :: MIT License",
 
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
