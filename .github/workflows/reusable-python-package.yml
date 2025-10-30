@@ -460,9 +460,6 @@ jobs:
           with open(result_file, "w") as f:
               f.write(result)
           PY
-          
-            python script.py > "$result_file"
-
             if [[ -f "$result_file" ]]; then
               exists=$(tr -d '\r\n' < "$result_file")
               rm -f "$result_file"
