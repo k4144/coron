@@ -439,31 +439,33 @@ jobs:
           pypi_has_version=false
 
           if [[ -n "$PACKAGE_NAME" && -n "$CURRENT_VERSION" ]]; then
-          if [[ -n "$PACKAGE_NAME" && -n "$CURRENT_VERSION" ]]; then
-          exists=$(
-          python - <<'PY'
-          import json
-          import os
-          import urllib.request
+            result_file=$(mktemp)
+            python <<'PY' > "$result_file"
+import json
+import os
+import urllib.request
 
-          package = os.environ.get("PACKAGE_NAME", "").strip()
-          version = os.environ.get("CURRENT_VERSION", "").strip()
+package = os.environ.get("PACKAGE_NAME", "").strip()
+version = os.environ.get("CURRENT_VERSION", "").strip()
 
-          if not package or not version:
-              print("false")
-          else:
-              try:
-                  with urllib.request.urlopen(f"https://pypi.org/pypi/{package}/json", timeout=10) as resp:
-                      data = json.load(resp)
-              except Exception:
-                  print("false")
-              else:
-                  releases = data.get("releases") or {}
-                  print("true" if version in releases else "false")
-          PY
-          )
-          if [[ "$exists" == "true" ]]; then
-              pypi_has_version=true
+if not package or not version:
+    print("false")
+else:
+    try:
+        with urllib.request.urlopen(f"https://pypi.org/pypi/{package}/json", timeout=10) as resp:
+            data = json.load(resp)
+    except Exception:
+        print("false")
+    else:
+        releases = data.get("releases") or {}
+        print("true" if version in releases else "false")
+PY
+            if [[ -f "$result_file" ]]; then
+              exists=$(tr -d '\r\n' < "$result_file")
+              rm -f "$result_file"
+              if [[ "$exists" == "true" ]]; then
+                pypi_has_version=true
+              fi
             fi
           fi
 
