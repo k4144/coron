@@ -457,7 +457,7 @@ jobs:
                 else:
                     releases = data.get("releases") or {}
                     print("true" if version in releases else "false")
-            PY
+          PY
 
             python script.py > "$result_file"
 
