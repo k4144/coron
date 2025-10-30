@@ -457,7 +457,7 @@ jobs:
                 else:
                     releases = data.get("releases") or {}
                     print("true" if version in releases else "false")
-            PY
+PY
             if [[ -f "$result_file" ]]; then
               exists=$(tr -d '\r\n' < "$result_file")
               rm -f "$result_file"
