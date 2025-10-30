@@ -440,7 +440,7 @@ jobs:
 
           if [[ -n "$PACKAGE_NAME" && -n "$CURRENT_VERSION" ]]; then
             result_file=$(mktemp)
-            python <<'PY' > "$result_file"
+            cat > script.py << 'PY'
             import json
             import os
             import urllib.request
@@ -457,7 +457,10 @@ jobs:
                 else:
                     releases = data.get("releases") or {}
                     print("true" if version in releases else "false")
-PY
+            PY
+
+            python script.py > "$result_file"
+
             if [[ -f "$result_file" ]]; then
               exists=$(tr -d '\r\n' < "$result_file")
               rm -f "$result_file"
