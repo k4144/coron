@@ -440,7 +440,7 @@ jobs:
 
           if [[ -n "$PACKAGE_NAME" && -n "$CURRENT_VERSION" ]]; then
             result_file=$(mktemp)
-            cat > script.py << 'PY'
+            cat << 'PY'
             import json
             import os
             import urllib.request
