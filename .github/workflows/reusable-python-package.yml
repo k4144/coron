@@ -440,13 +440,13 @@ jobs:
 
           if [[ -n "$PACKAGE_NAME" && -n "$CURRENT_VERSION" ]]; then
             result_file=$(mktemp)
-            python << 'PY'
+            python << PY
           import json
           import os
           import urllib.request
           package = os.environ.get("PACKAGE_NAME", "").strip()
           version = os.environ.get("CURRENT_VERSION", "").strip()
-          result_file = "$result_file" 
+          result_file = "${result_file}" 
           result = "false"
           if package and version:
               try:
