@@ -6,7 +6,7 @@
 [![Black](https://raw.githubusercontent.com/k4144/coron/main/badges/black.svg)](https://pypi.org/project/black/)
 [![Ruff](https://raw.githubusercontent.com/k4144/coron/main/badges/ruff.svg)](https://pypi.org/project/ruff/)
 [![Docs](https://raw.githubusercontent.com/k4144/coron/main/badges/docs.svg)](https://www.sphinx-doc.org/en/master/usage/quickstart.html)
-[![Wheel](https://img.shields.io/pypi/wheel/pytonb)](https://pypi.org/project/pytonb/)
+[![Wheel](https://img.shields.io/pypi/wheel/pytonb)](https://pypi.org/project/coron/)
 ![Status](https://img.shields.io/badge/status-beta-blue)
 ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
