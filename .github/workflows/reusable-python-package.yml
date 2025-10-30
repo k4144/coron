@@ -446,19 +446,21 @@ jobs:
           import urllib.request
           package = os.environ.get("PACKAGE_NAME", "").strip()
           version = os.environ.get("CURRENT_VERSION", "").strip()
-          if not package or not version:
-              print("false")
-          else:
+          result_file = "$result_file" 
+          result = "false"
+          if package and version:
               try:
                   with urllib.request.urlopen(f"https://pypi.org/pypi/{package}/json", timeout=10) as resp:
                       data = json.load(resp)
-              except Exception:
-                  print("false")
-              else:
                   releases = data.get("releases") or {}
-                  print("true" if version in releases else "false")
+                  if version in releases:
+                      result = "true"
+              except Exception:
+                  result = "false"
+          with open(result_file, "w") as f:
+              f.write(result)
           PY
-
+          
             python script.py > "$result_file"
 
             if [[ -f "$result_file" ]]; then
