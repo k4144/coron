@@ -16,7 +16,7 @@ local_scheme = "no-local-version"
 ## project config
 
 [project]
-version = 0.1.1
+version = "0.1.1"
 name = "coron"
 description = "simple python packaging tutorial"
 readme = "README.md"
