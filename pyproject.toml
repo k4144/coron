@@ -110,6 +110,7 @@ url = 'https://github.com/k4144/pypi_packaging_tutorial'
 
 [dependency-groups]
 dev = [
+    "cookiecutter>=2.6.0",
     "ruff>=0.14.2",
 ]
 

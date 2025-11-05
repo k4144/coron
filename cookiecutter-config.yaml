@@ -1,0 +1,11 @@
+default_context:
+  author_email: "k4144.github@gmail.com"
+  author_name: "k4144"
+  package_name: "package_name"
+  project_description: "simple python package"
+  project_name: "project_name"
+  project_slug: "project_slug"
+  project_version: "0.0.1"
+  python_version: "3.13"
+  repository_slug: "repo_slug"
+  repository_url: "https://github.com/k4144/repo_slug"

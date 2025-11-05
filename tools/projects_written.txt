@@ -1,0 +1,6 @@
+/Users/kgregorian/packages/coron5
+/Users/kgregorian/packages/project_name
+/Users/kgregorian/packages/project_slug
+/Users/kgregorian/packages/coron5/project_slug
+/Users/kgregorian/uv/temp_folder/coron5
+/Users/kgregorian/packages/coron6

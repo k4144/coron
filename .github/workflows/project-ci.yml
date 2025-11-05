@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   pipeline:
-    uses: ./.github/workflows/reusable-python-package.yml
+    uses: ./.github/workflows/ci-python.yml
     with:
       python-version: "3.11"
       package-name: "coron"
